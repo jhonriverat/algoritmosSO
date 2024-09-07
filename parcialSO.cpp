@@ -19,12 +19,13 @@ map<string, map<string, string> > copiaProcesos;
 
 queue<string> rr;
 queue<string> rrEspera;
+// queue<string> rrEspera2;
 queue<string> fcfs;
 queue<string> fcfsEspera;
 // queue<string> atendidosRR;
 
 int timeCpu = 0;
-int quantum = 3;
+int quantum = 2;
 int cantProcesos = 0;
 
 void imprimirTiemposDeEspera(string tipoDato) {
@@ -42,7 +43,7 @@ void imprimirTiemposDeEspera(string tipoDato) {
         int wt = stoi(datos.at(tipoDato)); 
         suma+=wt;
         promedio = suma/cantProcesos;
-        cout << wt <<endl;
+        // cout << wt <<endl;
         
         printf("Proceso %s tiene un tiempo de espera de %d. \n", proceso.c_str(), wt);
     }
@@ -65,14 +66,28 @@ void imprimirTiemposRespuesta() {
         printf("Proceso %s tiene un tiempo de respuesta de %d. \n", proceso.c_str(),rt);
     }
 }
+void imprimirTurnAround() {
+
+    cout << endl << "_______TIEMPOS TAT_______" << endl << endl;
+    
+    map<string, map<string, string> >::iterator it;
+    
+    for (it = procesos.begin(); it != procesos.end(); ++it) {
+        const string& proceso = it->first;
+        const map<string, string>& datos = it->second;
+        
+        int rt = stoi(datos.at("tat")); 
+        
+        printf("Proceso %s tiene un tiempo de respuesta de %d. \n", proceso.c_str(),rt);
+    }
+}
 
 void roundRobin() {
     int wt = 0;
     cout << endl <<"_____EN EJECUCION ROUND ROBIN_____" << endl << endl;
-    while (!rr.empty()) {
-        string proceso = rr.front();
-
+    while (!rr.empty()) {        
         if (!rr.empty()) {
+            string proceso = rr.front();
             rr.pop();
             int bursTime = stoi(procesos[proceso]["BursTime"]);
             int arrivalTime = stoi(procesos[proceso]["ArrivalTime"]);
@@ -86,6 +101,7 @@ void roundRobin() {
                 }
                 timeCpu +=quantum;
 
+                printf("Proceso %s no terminó en cuántum y en tiempo %d\n", proceso.c_str(), timeCpu);
                 
 
                 if (rrEspera.empty()){
@@ -95,12 +111,14 @@ void roundRobin() {
                     while (!rrEspera.empty()) 
                     {
                         string procesoEspera = rrEspera.front();
-                        int arrivalTime = stoi(procesos[procesoEspera]["ArrivalTime"]);
-
-                        if (arrivalTime <= timeCpu) {
+                        int arrivalTimeE = stoi(copiaProcesos[procesoEspera]["ArrivalTime"]);
+                        // cout << "entre al ciclo con el proceso " << procesoEspera.c_str() << " y arrival " << arrivalTimeE << endl;
+                        // cout << timeCpu << endl;
+                        if (arrivalTimeE <= timeCpu+quantum) {
+                            // cout << "Entre al ciclo" << endl;
                             rrEspera.pop();
                             rr.push(procesoEspera);
-                            cout << "se agrego proceso " << procesoEspera << " a la cola en tiempo " << timeCpu << endl;
+                            cout << "se agrego proceso " << procesoEspera << " a la cola en tiempo " << timeCpu+quantum << endl;
                         } else {
                             break;
                         }
@@ -108,14 +126,13 @@ void roundRobin() {
                     rr.push(proceso);
                 }
 
-                printf("Proceso %s no terminó en cuántum y en tiempo %d\n", proceso.c_str(), timeCpu);
-
             } else {
                 
                 if (cont == 1){
                     procesos[proceso]["rt"] = to_string(timeCpu);
                 }
                 timeCpu += bursTime;
+
 
                 procesos[proceso]["BursTime"] = "0";
                 procesos[proceso]["ct"] = to_string(timeCpu);
@@ -127,11 +144,25 @@ void roundRobin() {
                 // printf("turn arround %d of process %s \n", turnAround, proceso.c_str());
                 // int waiting = ct - (tl+bt);
                 // printf(" tl %d  bt %d ct %d  de el proceso: %s\n", tl,bt,ct, proceso.c_str());
+                procesos[proceso]["tat"] = to_string(turnAround);
                 procesos[proceso]["wt"] = to_string(waiting);
                 printf("Proceso %s terminó en cuántum y en tiempo %d\n", proceso.c_str(), timeCpu);
-                
-
-                
+                while (!rrEspera.empty())     
+                {
+                    string procesoEspera = rrEspera.front();
+                    int arrivalTimeE = stoi(copiaProcesos[procesoEspera]["ArrivalTime"]);
+                    // cout << "entre al ciclo con el proceso " << procesoEspera.c_str() << " y arrival " << arrivalTimeE << endl;
+                    // cout << timeCpu << endl;
+                    if (arrivalTimeE <= timeCpu) {
+                        // cout << "Entre al ciclo" << endl;
+                        rrEspera.pop();
+                        rr.push(procesoEspera);
+                        cout << "se agrego proceso " << procesoEspera << " a la cola en tiempo " << timeCpu << endl;
+                    } else {
+                        break;
+                    }
+                }
+          
             }
 
         }
@@ -165,6 +196,7 @@ void algoritmosJuntos(){
             int turnAround = ct - arrival;
             int waiting = turnAround - bursTime;
             procesos[proceso]["wt"] = to_string(waiting);
+            procesos[proceso]["tat"] = to_string(turnAround);
             printf("Proceso %s finalizó en FCFS en tiempo %d \n", proceso.c_str(), timeCpu);
 
             while (!fcfsEspera.empty()) {
@@ -203,9 +235,8 @@ void algoritmosJuntos(){
                         break;
                     }
                 }
-                if (!rr.empty()){
-                    roundRobin();
-                }
+                // if (!rr.empty()){
+                roundRobin();
                 cout << endl <<"_____EN EJECUCION FCFS_____" << endl << endl;
             }
         }
@@ -310,7 +341,8 @@ int main() {
     lecturaArchivo();
     // imprimirCopiaProcesos();
     imprimirTiemposDeEspera("wt");
-    imprimirTiemposRespuesta();
-    // imprimirTiemposDeEspera("wt");
+    // imprimirTiemposRespuesta();
+    imprimirTurnAround();
+    imprimirTiemposDeEspera("ct");
     return 0;
 }
