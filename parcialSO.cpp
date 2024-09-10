@@ -192,9 +192,10 @@ void algoritmosJuntos(){
             // Ejecutar el proceso FCFS
             timeCpu += bursTime;
             procesos[proceso]["ct"] = to_string(timeCpu);
+            int burs = stoi(copiaProcesos[proceso]["BursTime"]);
             int ct = stoi(procesos[proceso]["ct"]);;
             int turnAround = ct - arrival;
-            int waiting = turnAround - bursTime;
+            int waiting = turnAround - burs;
             procesos[proceso]["wt"] = to_string(waiting);
             procesos[proceso]["tat"] = to_string(turnAround);
             printf("Proceso %s finalizó en FCFS en tiempo %d \n", proceso.c_str(), timeCpu);
